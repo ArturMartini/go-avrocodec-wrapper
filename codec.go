@@ -10,7 +10,7 @@ import (
 )
 
 type CodecWrapper interface {
-	Translate([]byte) (map[string]interface{}, error)
+	Unmarshall([]byte) (map[string]interface{}, error)
 }
 
 type codec struct {
