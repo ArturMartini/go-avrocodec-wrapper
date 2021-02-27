@@ -32,12 +32,10 @@ func NewFromRegistryMock(schema string) (CodecWrapper, error) {
 	s := http.NewServeMux()
 	s.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("[" + id + "]"))
-		w.WriteHeader(http.StatusOK)
 	})
 
 	s.HandleFunc(path+"/"+id, func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(schema))
-		w.WriteHeader(http.StatusOK)
 	})
 
 	server := httptest.NewServer(s)
