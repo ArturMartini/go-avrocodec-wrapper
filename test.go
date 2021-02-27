@@ -1,34 +1,47 @@
-package go_avro_codec
+package go_avrocodec_wrapper
 
 import (
+	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
-	"strings"
+	"strconv"
 )
 
 type codecTest struct {
 	codec
 }
 
-func NewFromRegistryMock(address, schema string) (CodecWrapper, error) {
-	idx := strings.LastIndex(address, "/")
+type AvroSchema struct {
+	Subject string `json:"subject"`
+	Id      int    `json:"id"`
+	Version int    `json:"version"`
+	Schema  string `json:"schema"`
+}
 
-	version := address[idx+1:]
-	path := address[:idx-1]
-	
+func NewFromRegistryMock(schema string) (CodecWrapper, error) {
+	avroSchema := AvroSchema{}
+	err := json.Unmarshal([]byte(schema), &avroSchema)
+	if err != nil {
+		return nil, errors.New("invalid schema structure")
+	}
+
+	path := "/" + avroSchema.Subject
+	id := strconv.Itoa(avroSchema.Id)
+
 	s := http.NewServeMux()
 	s.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("[" + version + "]"))
+		w.Write([]byte("[" + id + "]"))
 		w.WriteHeader(http.StatusOK)
 	})
-	
-	s.HandleFunc(path + "/" + version, func(w http.ResponseWriter, r *http.Request) {
+
+	s.HandleFunc(path+"/"+id, func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(schema))
 		w.WriteHeader(http.StatusOK)
 	})
 
 	server := httptest.NewServer(s)
 	defer server.Close()
-	
+
 	return NewFromRegistry(server.URL + path)
 }

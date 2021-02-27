@@ -1,6 +1,7 @@
-package go_avro_codec
+package go_avrocodec_wrapper
 
 import (
+	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"github.com/linkedin/goavro/v2"
@@ -10,11 +11,13 @@ import (
 )
 
 type CodecWrapper interface {
-	Unmarshall([]byte) (map[string]interface{}, error)
+	Encode(map[string]interface{}) ([]byte, error)
+	Decode([]byte) (map[string]interface{}, error)
 }
 
 type codec struct {
 	versions map[int]*goavro.Codec
+	latest int
 }
 
 func NewFromRegistry(schemaAddress string) (CodecWrapper, error) {
@@ -26,7 +29,7 @@ func NewFromRegistry(schemaAddress string) (CodecWrapper, error) {
 		return nil, err
 	}
 
-	for _, version := range versions {
+	for idx, version := range versions {
 		var schemaMap = map[string]interface{}{}
 		if err := getDataFromRegistry(schemaAddress+"/"+strconv.Itoa(version), &schemaMap); err != nil {
 			return nil, err
@@ -34,6 +37,10 @@ func NewFromRegistry(schemaAddress string) (CodecWrapper, error) {
 
 		if codecs[version], err = goavro.NewCodec(schemaMap["schema"].(string)); err != nil {
 			return nil, err
+		}
+
+		if idx + 1 == len(versions) {
+			codec.latest = version
 		}
 	}
 
@@ -61,7 +68,23 @@ func getDataFromRegistry(schema string, rawMap interface{}) error {
 	return err
 }
 
-func (r codec) Unmarshall(value []byte) (map[string]interface{}, error) {
+func (r codec) Encode(value map[string]interface{}) ([]byte, error) {
+	var payload = make([]byte, 0)
+	var binaryValue []byte
+	var binarySchemaId = make([]byte, 4)
+
+	binary.BigEndian.PutUint32(binarySchemaId, uint32(r.latest))
+
+	binaryPayload, err := r.versions[r.latest].BinaryFromNative(payload, value)
+
+	binaryValue = append(binaryValue, byte(0))
+	binaryValue = append(binaryValue, binarySchemaId...)
+	binaryValue = append(binaryValue, binaryPayload...)
+
+	return binaryValue, err
+}
+
+func (r codec) Decode(value []byte) (map[string]interface{}, error) {
 	var error error
 	for _, codec := range r.versions {
 		payload, _, err := codec.NativeFromBinary(value[5:])
