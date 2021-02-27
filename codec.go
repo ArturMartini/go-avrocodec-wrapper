@@ -64,7 +64,7 @@ func getDataFromRegistry(schema string, rawMap interface{}) error {
 func (r codec) Unmarshall(value []byte) (map[string]interface{}, error) {
 	var error error
 	for _, codec := range r.versions {
-		payload, _, err := codec.NativeFromBinary(value)
+		payload, _, err := codec.NativeFromBinary(value[5:])
 		if payload != nil {
 			return payload.(map[string]interface{}), nil
 		} else {
