@@ -11,17 +11,18 @@ type codecTest struct {
 }
 
 func NewFromRegistryMock(address, schema string) (CodecWrapper, error) {
-	id := strings.LastIndex(schema, "/")
-	
-	path := address[:id-2]
+	idx := strings.LastIndex(address, "/")
+
+	version := address[idx+1:]
+	path := address[:idx-1]
 	
 	s := http.NewServeMux()
 	s.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("[" + address[id:] + "]"))
+		w.Write([]byte("[" + version + "]"))
 		w.WriteHeader(http.StatusOK)
 	})
 	
-	s.HandleFunc(path + "/" + address[id:], func(w http.ResponseWriter, r *http.Request) {
+	s.HandleFunc(path + "/" + version, func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(schema))
 		w.WriteHeader(http.StatusOK)
 	})
@@ -29,5 +30,5 @@ func NewFromRegistryMock(address, schema string) (CodecWrapper, error) {
 	server := httptest.NewServer(s)
 	defer server.Close()
 	
-	return NewFromRegistry(schema)
+	return NewFromRegistry(server.URL + path)
 }
