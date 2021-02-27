@@ -61,7 +61,7 @@ func getDataFromRegistry(schema string, rawMap interface{}) error {
 	return err
 }
 
-func (r codec) Translate(value []byte) (map[string]interface{}, error) {
+func (r codec) Unmarshall(value []byte) (map[string]interface{}, error) {
 	var error error
 	for _, codec := range r.versions {
 		payload, _, err := codec.NativeFromBinary(value)
