@@ -122,11 +122,24 @@ func (r *codec) Decode(value []byte) (map[string]interface{}, error) {
 	var error error
 	for _, codec := range r.codecs {
 		payload, _, err := codec.NativeFromBinary(value[5:])
-		if payload != nil {
-			return payload.(map[string]interface{}), nil
-		} else {
-			error = err
+		if err == nil {
+			if payload != nil {
+				return payload.(map[string]interface{}), nil
+			} else {
+				error = err
+			}
 		}
+
+		payload, _, err = codec.NativeFromBinary(value)
+		if err == nil {
+			if payload != nil {
+				return payload.(map[string]interface{}), nil
+			} else {
+				error = err
+			}
+		}
+
+
 	}
 	return nil, error
 }
