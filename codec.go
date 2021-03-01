@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strconv"
+	"time"
 )
 
 type CodecWrapper interface {
@@ -16,36 +17,69 @@ type CodecWrapper interface {
 }
 
 type codec struct {
-	versions map[int]*goavro.Codec
-	latest int
+	codecs  map[int]*goavro.Codec
+	latest  int
+	address string
+	timeUpdate time.Duration
 }
 
-func NewFromRegistry(schemaAddress string) (CodecWrapper, error) {
-	var codec codec
-	var codecs = map[int]*goavro.Codec{}
-	var versions = make([]int, 0)
-	var err = getDataFromRegistry(schemaAddress, &versions)
+func NewFromRegistry(schemaAddress string, timeUpdate time.Duration) (CodecWrapper, error) {
+	var codec = codec{
+		address: schemaAddress,
+		codecs:  map[int]*goavro.Codec{},
+		timeUpdate: timeUpdate,
+	}
+	var versions, err = codec.getVersionsFromRegistry()
 	if err != nil {
 		return nil, err
 	}
 
+	err = codec.getSchemaByVersionFromRegistry(versions)
+	go codec.update()
+	return &codec, err
+}
+
+func (r *codec) update() {
+	for true {
+		<- time.After(r.timeUpdate)
+		var versions, err = r.getVersionsFromRegistry()
+		if err != nil {
+			continue
+		}
+
+		if len(versions) == len(r.codecs) {
+			continue
+		}
+
+		err = r.getSchemaByVersionFromRegistry(versions)
+	}
+}
+
+func (r *codec) getVersionsFromRegistry() ([]int, error) {
+	var versions = make([]int, 0)
+	var err = getDataFromRegistry(r.address, &versions)
+	return versions, err
+}
+
+func (r *codec) getSchemaByVersionFromRegistry(versions []int) error {
 	for idx, version := range versions {
 		var schemaMap = map[string]interface{}{}
-		if err := getDataFromRegistry(schemaAddress+"/"+strconv.Itoa(version), &schemaMap); err != nil {
-			return nil, err
+		if err := getDataFromRegistry(r.address+"/"+strconv.Itoa(version), &schemaMap); err != nil {
+			return err
 		}
 
-		if codecs[version], err = goavro.NewCodec(schemaMap["schema"].(string)); err != nil {
-			return nil, err
+		c, err := goavro.NewCodec(schemaMap["schema"].(string))
+		if err != nil {
+			return err
 		}
 
-		if idx + 1 == len(versions) {
-			codec.latest = version
+		r.codecs[version] = c
+
+		if idx+1 == len(versions) {
+			r.latest = version
 		}
 	}
-
-	codec.versions = codecs
-	return &codec, nil
+	return nil
 }
 
 func getDataFromRegistry(schema string, rawMap interface{}) error {
@@ -68,14 +102,14 @@ func getDataFromRegistry(schema string, rawMap interface{}) error {
 	return err
 }
 
-func (r codec) Encode(value map[string]interface{}) ([]byte, error) {
+func (r *codec) Encode(value map[string]interface{}) ([]byte, error) {
 	var payload = make([]byte, 0)
 	var binaryValue []byte
 	var binarySchemaId = make([]byte, 4)
 
 	binary.BigEndian.PutUint32(binarySchemaId, uint32(r.latest))
 
-	binaryPayload, err := r.versions[r.latest].BinaryFromNative(payload, value)
+	binaryPayload, err := r.codecs[r.latest].BinaryFromNative(payload, value)
 
 	binaryValue = append(binaryValue, byte(0))
 	binaryValue = append(binaryValue, binarySchemaId...)
@@ -84,15 +118,28 @@ func (r codec) Encode(value map[string]interface{}) ([]byte, error) {
 	return binaryValue, err
 }
 
-func (r codec) Decode(value []byte) (map[string]interface{}, error) {
+func (r *codec) Decode(value []byte) (map[string]interface{}, error) {
 	var error error
-	for _, codec := range r.versions {
+	for _, codec := range r.codecs {
 		payload, _, err := codec.NativeFromBinary(value[5:])
-		if payload != nil {
-			return payload.(map[string]interface{}), nil
-		} else {
-			error = err
+		if err == nil {
+			if payload != nil {
+				return payload.(map[string]interface{}), nil
+			} else {
+				error = err
+			}
 		}
+
+		payload, _, err = codec.NativeFromBinary(value)
+		if err == nil {
+			if payload != nil {
+				return payload.(map[string]interface{}), nil
+			} else {
+				error = err
+			}
+		}
+
+
 	}
 	return nil, error
-}	
+}
