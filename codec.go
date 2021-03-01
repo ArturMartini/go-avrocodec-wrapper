@@ -20,12 +20,14 @@ type codec struct {
 	codecs  map[int]*goavro.Codec
 	latest  int
 	address string
+	timeUpdate time.Duration
 }
 
-func NewFromRegistry(schemaAddress string) (CodecWrapper, error) {
+func NewFromRegistry(schemaAddress string, timeUpdate time.Duration) (CodecWrapper, error) {
 	var codec = codec{
 		address: schemaAddress,
 		codecs:  map[int]*goavro.Codec{},
+		timeUpdate: timeUpdate,
 	}
 	var versions, err = codec.getVersionsFromRegistry()
 	if err != nil {
@@ -39,7 +41,7 @@ func NewFromRegistry(schemaAddress string) (CodecWrapper, error) {
 
 func (r *codec) update() {
 	for true {
-		<- time.After(time.Second * 15)
+		<- time.After(r.timeUpdate)
 		var versions, err = r.getVersionsFromRegistry()
 		if err != nil {
 			continue
