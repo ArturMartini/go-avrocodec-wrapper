@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strconv"
+	"time"
 )
 
 type codecTest struct {
@@ -41,5 +42,5 @@ func NewFromRegistryMock(schema string) (CodecWrapper, error) {
 	server := httptest.NewServer(s)
 	defer server.Close()
 
-	return NewFromRegistry(server.URL + path)
+	return NewFromRegistry(server.URL + path, time.Minute * 1)
 }
