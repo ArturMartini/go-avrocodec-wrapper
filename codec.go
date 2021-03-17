@@ -73,10 +73,12 @@ func (r *codec) getSchemaByVersionFromRegistry(versions []int) error {
 			return err
 		}
 
-		r.codecs[version] = c
+		schemaId := int(schemaMap["id"].(float64))
+
+		r.codecs[schemaId] = c
 
 		if idx+1 == len(versions) {
-			r.latest = version
+			r.latest = schemaId
 		}
 	}
 	return nil
