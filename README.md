@@ -1,7 +1,7 @@
 
 [![GoDoc](https://godoc.org/github.com/arturmartini/go-avrocodec-wrapper?status.svg)](https://pkg.go.dev/github.com/arturmartini/go-avrocodec-wrapper?tab=doc)
 [![Go Report Card](https://goreportcard.com/badge/github.com/arturmartini/go-avrocodec-wrapper)](https://goreportcard.com/report/github.com/arturmartini/go-avrocodec-wrapper)
-[![Coverage Status](https://coveralls.io/repos/github/arturmartini/go-avrocodec-wrapper/badge.svg?branch=main)](https://coveralls.io/github/arturmartini/go-avrocodec-wrapper?branch=main)
+[![Coverage Status](http://gocover.io/_badge/github.com/arturmartini/go-avrocodec-wrapper)](http://gocover.io/github.com/arturmartini/go-avrocodec-wrapper)
 
 # go-avrocodec-wrapper
 go-avrocodec-wrapper is a library to simplify process of load schema from registry, encode and decode data
