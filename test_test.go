@@ -1,4 +1,4 @@
-package go_avrocodec_wrapper
+package main
 
 import (
 	"github.com/stretchr/testify/assert"
