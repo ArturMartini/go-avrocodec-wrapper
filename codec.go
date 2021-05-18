@@ -17,16 +17,16 @@ type CodecWrapper interface {
 }
 
 type codec struct {
-	codecs  map[int]*goavro.Codec
-	latest  int
-	address string
+	codecs     map[int]*goavro.Codec
+	latest     int
+	address    string
 	timeUpdate time.Duration
 }
 
 func NewFromRegistry(schemaAddress string, timeUpdate time.Duration) (CodecWrapper, error) {
 	var codec = codec{
-		address: schemaAddress,
-		codecs:  map[int]*goavro.Codec{},
+		address:    schemaAddress,
+		codecs:     map[int]*goavro.Codec{},
 		timeUpdate: timeUpdate,
 	}
 	var versions, err = codec.getVersionsFromRegistry()
@@ -41,7 +41,7 @@ func NewFromRegistry(schemaAddress string, timeUpdate time.Duration) (CodecWrapp
 
 func (r *codec) update() {
 	for true {
-		<- time.After(r.timeUpdate)
+		<-time.After(r.timeUpdate)
 		var versions, err = r.getVersionsFromRegistry()
 		if err != nil {
 			continue
@@ -140,7 +140,6 @@ func (r *codec) Decode(value []byte) (map[string]interface{}, error) {
 				error = err
 			}
 		}
-
 
 	}
 	return nil, error

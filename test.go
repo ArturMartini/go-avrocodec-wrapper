@@ -42,5 +42,5 @@ func NewFromRegistryMock(schema string) (CodecWrapper, error) {
 	server := httptest.NewServer(s)
 	defer server.Close()
 
-	return NewFromRegistry(server.URL + path, time.Minute * 1)
+	return NewFromRegistry(server.URL+path, time.Minute*1)
 }
