@@ -135,18 +135,16 @@ func (r *codec) Decode(value []byte) (map[string]interface{}, error) {
 		if err == nil {
 			if payload != nil {
 				return payload.(map[string]interface{}), nil
-			} else {
-				error = err
 			}
+			error = err
 		}
 
 		payload, _, err = codec.NativeFromBinary(value)
 		if err == nil {
 			if payload != nil {
 				return payload.(map[string]interface{}), nil
-			} else {
-				error = err
 			}
+			error = err
 		}
 
 	}
