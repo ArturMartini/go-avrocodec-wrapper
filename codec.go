@@ -11,9 +11,12 @@ import (
 	"time"
 )
 
+// CodecWrapper wrapper to encode and decode messages
 type CodecWrapper interface {
-	Encode(map[string]interface{}) ([]byte, error)
-	Decode([]byte) (map[string]interface{}, error)
+	// Encode a kv to avro message binary
+	Encode(kv map[string]interface{}) ([]byte, error)
+	// Decode a avro message binary data to key value map
+	Decode(data []byte) (map[string]interface{}, error)
 }
 
 type codec struct {
@@ -23,6 +26,9 @@ type codec struct {
 	timeUpdate time.Duration
 }
 
+// NewFromRegistry create a CodecWrapper
+//   from a Kafka Registry endpoint schemaAddress
+//   and keep refreshed a schema in timeUpdate duration
 func NewFromRegistry(schemaAddress string, timeUpdate time.Duration) (CodecWrapper, error) {
 	var codec = codec{
 		address:    schemaAddress,
@@ -104,6 +110,7 @@ func getDataFromRegistry(schema string, rawMap interface{}) error {
 	return err
 }
 
+// Encode a value to avro message binary
 func (r *codec) Encode(value map[string]interface{}) ([]byte, error) {
 	var payload = make([]byte, 0)
 	var binaryValue []byte
@@ -120,6 +127,7 @@ func (r *codec) Encode(value map[string]interface{}) ([]byte, error) {
 	return binaryValue, err
 }
 
+// Decode a avro message binary value to key value map
 func (r *codec) Decode(value []byte) (map[string]interface{}, error) {
 	var error error
 	for _, codec := range r.codecs {
