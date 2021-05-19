@@ -4,11 +4,12 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"errors"
-	"github.com/linkedin/goavro/v2"
 	"io/ioutil"
 	"net/http"
 	"strconv"
 	"time"
+
+	"github.com/linkedin/goavro/v2"
 )
 
 // CodecWrapper wrapper to encode and decode messages
@@ -27,8 +28,8 @@ type codec struct {
 }
 
 // NewFromRegistry create a CodecWrapper
-//   from a Kafka Registry endpoint schemaAddress
-//   and keep refreshed a schema in timeUpdate duration
+// from a Kafka Registry endpoint schemaAddress
+// and keep a refreshed schema in timeUpdate interval
 func NewFromRegistry(schemaAddress string, timeUpdate time.Duration) (CodecWrapper, error) {
 	var codec = codec{
 		address:    schemaAddress,
@@ -40,7 +41,7 @@ func NewFromRegistry(schemaAddress string, timeUpdate time.Duration) (CodecWrapp
 		return nil, err
 	}
 
-	err = codec.getSchemaByVersionFromRegistry(versions)
+	err = codec.getSchemasByVersionsFromRegistry(versions)
 	go codec.update()
 	return &codec, err
 }
@@ -57,7 +58,7 @@ func (r *codec) update() {
 			continue
 		}
 
-		err = r.getSchemaByVersionFromRegistry(versions)
+		err = r.getSchemasByVersionsFromRegistry(versions)
 	}
 }
 
@@ -67,7 +68,7 @@ func (r *codec) getVersionsFromRegistry() ([]int, error) {
 	return versions, err
 }
 
-func (r *codec) getSchemaByVersionFromRegistry(versions []int) error {
+func (r *codec) getSchemasByVersionsFromRegistry(versions []int) error {
 	for idx, version := range versions {
 		var schemaMap = map[string]interface{}{}
 		if err := getDataFromRegistry(r.address+"/"+strconv.Itoa(version), &schemaMap); err != nil {
@@ -129,14 +130,16 @@ func (r *codec) Encode(value map[string]interface{}) ([]byte, error) {
 
 // Decode a avro message binary value to key value map
 func (r *codec) Decode(value []byte) (map[string]interface{}, error) {
-	var error error
+	var err error
 	for _, codec := range r.codecs {
-		payload, _, err := codec.NativeFromBinary(value[5:])
-		if err == nil {
-			if payload != nil {
-				return payload.(map[string]interface{}), nil
+		var payload interface{}
+		if len(value) > 5 {
+			payload, _, err = codec.NativeFromBinary(value[5:])
+			if err == nil {
+				if payload != nil {
+					return payload.(map[string]interface{}), nil
+				}
 			}
-			error = err
 		}
 
 		payload, _, err = codec.NativeFromBinary(value)
@@ -144,9 +147,7 @@ func (r *codec) Decode(value []byte) (map[string]interface{}, error) {
 			if payload != nil {
 				return payload.(map[string]interface{}), nil
 			}
-			error = err
 		}
-
 	}
-	return nil, error
+	return nil, err
 }
