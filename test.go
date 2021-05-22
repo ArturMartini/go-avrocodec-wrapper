@@ -1,4 +1,4 @@
-package go_avrocodec_wrapper
+package main
 
 import (
 	"encoding/json"
@@ -13,15 +13,23 @@ type codecTest struct {
 	codec
 }
 
-type AvroSchema struct {
+type avroSchema struct {
 	Subject string `json:"subject"`
 	Id      int    `json:"id"`
 	Version int    `json:"version"`
 	Schema  string `json:"schema"`
 }
 
+// NewFromRegistryMock create a new CodecWrapper from a schema string
+// the format expected is:
+// {
+//    "id": 1,
+//    "subject": "entity-value",
+//    "version": 2,
+//    "schema": "{}",
+// }
 func NewFromRegistryMock(schema string) (CodecWrapper, error) {
-	avroSchema := AvroSchema{}
+	avroSchema := avroSchema{}
 	err := json.Unmarshal([]byte(schema), &avroSchema)
 	if err != nil {
 		return nil, errors.New("invalid schema structure")
@@ -42,5 +50,5 @@ func NewFromRegistryMock(schema string) (CodecWrapper, error) {
 	server := httptest.NewServer(s)
 	defer server.Close()
 
-	return NewFromRegistry(server.URL + path, time.Minute * 1)
+	return NewFromRegistry(server.URL+path, time.Minute*1)
 }
