@@ -1,4 +1,4 @@
-package main
+package go_avrocodec_wrapper
 
 import (
 	"encoding/json"
