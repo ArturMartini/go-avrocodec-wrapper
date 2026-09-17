@@ -132,7 +132,9 @@ func (r *codec) Encode(value map[string]interface{}) ([]byte, error) {
 // Decode a avro message binary value to key value map
 func (r *codec) Decode(value []byte) (map[string]interface{}, error) {
 	var err error
-
+	if len(value) < 5 {
+		return nil, errors.New("value is too short")
+	}
 	schemaId := binary.BigEndian.Uint32(value[1:5])
 
 	if _, ok := r.codecs[int(schemaId)]; ok {
