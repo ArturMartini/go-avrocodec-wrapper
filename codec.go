@@ -6,6 +6,7 @@ import (
 	"errors"
 	"io/ioutil"
 	"net/http"
+	"sort"
 	"strconv"
 	"time"
 
@@ -131,7 +132,26 @@ func (r *codec) Encode(value map[string]interface{}) ([]byte, error) {
 // Decode a avro message binary value to key value map
 func (r *codec) Decode(value []byte) (map[string]interface{}, error) {
 	var err error
-	for _, codec := range r.codecs {
+	if len(value) < 1 || len(value) == 1 && value[0] == 0 {
+		return nil, errors.New("value is empty")
+	}
+	schemaId := binary.BigEndian.Uint32(value[1:5])
+
+	if _, ok := r.codecs[int(schemaId)]; ok {
+		payload, _, err := r.codecs[int(schemaId)].NativeFromBinary(value[5:])
+		if err == nil {
+			return payload.(map[string]interface{}), nil
+		}
+	}
+	// if the schema is not found, try to decode with the latest schema
+	schemaIDs := make([]int, 0, len(r.codecs))
+	for id := range r.codecs {
+		schemaIDs = append(schemaIDs, id)
+	}
+	sort.Sort(sort.Reverse(sort.IntSlice(schemaIDs)))
+
+	for _, id := range schemaIDs {
+		codec := r.codecs[id]
 		var payload interface{}
 		if len(value) > 5 {
 			payload, _, err = codec.NativeFromBinary(value[5:])

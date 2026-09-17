@@ -40,6 +40,50 @@ func TestMustReturnErrorOnInvalidPayload(t *testing.T) {
 	assert.Nil(t, valueDecoded)
 }
 
+func TestNonNumericBytesAsValue(t *testing.T) {
+	codec, err := NewFromRegistryMock(newAvroSchema(7, 2, "entity-value", schema))
+
+	nonBinaryValue, err := codec.Encode(map[string]interface{}{"value": "asd"})
+	assert.Nil(t, err)
+
+	valueDecoded, err := codec.Decode(nonBinaryValue)
+	assert.Nil(t, err)
+	assert.Equal(t, map[string]interface{}{"value": "asd"}, valueDecoded)
+}
+
+func TestNonNumericBytesAsValueWithEmptyValue(t *testing.T) {
+	codec, err := NewFromRegistryMock(newAvroSchema(7, 2, "entity-value", schema))
+
+	nonBinaryValue, err := codec.Encode(map[string]interface{}{"value": ""})
+	assert.Nil(t, err)
+
+	valueDecoded, err := codec.Decode(nonBinaryValue)
+	assert.Nil(t, err)
+	assert.Equal(t, map[string]interface{}{"value": ""}, valueDecoded)
+}
+
+func TestNonNumericBytesAsValueWithInvalidSchemaId(t *testing.T) {
+	codec, err := NewFromRegistryMock(newAvroSchema(7, 2, "entity-value", schema))
+
+	nonBinaryValue, err := codec.Encode(map[string]interface{}{"value": "asd"})
+	assert.Nil(t, err)
+
+	valueDecoded, err := codec.Decode(nonBinaryValue[5:])
+	assert.Nil(t, err)
+	assert.Equal(t, map[string]interface{}{"value": "asd"}, valueDecoded)
+}
+
+func TestNonNumericBytesAsValueWithInvalidSchemaIdWithEmptyValue(t *testing.T) {
+	codec, err := NewFromRegistryMock(newAvroSchema(7, 2, "entity-value", schema))
+
+	nonBinaryValue, err := codec.Encode(map[string]interface{}{"value": ""})
+	assert.Nil(t, err)
+
+	valueDecoded, err := codec.Decode(nonBinaryValue[5:])
+	assert.NotNil(t, err)
+	assert.Nil(t, valueDecoded)
+}
+
 func newAvroSchema(id, version int, subject, schema string) string {
 	return fmt.Sprintf(`{
 			"id":%d,
