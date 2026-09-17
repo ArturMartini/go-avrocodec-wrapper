@@ -135,11 +135,13 @@ func (r *codec) Decode(value []byte) (map[string]interface{}, error) {
 
 	schemaId := binary.BigEndian.Uint32(value[1:5])
 
-	payload, _, err := r.codecs[int(schemaId)].NativeFromBinary(value[5:])
-	if err == nil {
-		return payload.(map[string]interface{}), nil
+	if _, ok := r.codecs[int(schemaId)]; ok {
+		payload, _, err := r.codecs[int(schemaId)].NativeFromBinary(value[5:])
+		if err == nil {
+			return payload.(map[string]interface{}), nil
+		}
 	}
-
+	// if the schema is not found, try to decode with the latest schema
 	schemaIDs := make([]int, 0, len(r.codecs))
 	for id := range r.codecs {
 		schemaIDs = append(schemaIDs, id)
