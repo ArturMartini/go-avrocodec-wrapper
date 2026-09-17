@@ -6,6 +6,7 @@ import (
 	"errors"
 	"io/ioutil"
 	"net/http"
+	"sort"
 	"strconv"
 	"time"
 
@@ -139,7 +140,14 @@ func (r *codec) Decode(value []byte) (map[string]interface{}, error) {
 		return payload.(map[string]interface{}), nil
 	}
 
-	for _, codec := range r.codecs {
+	schemaIDs := make([]int, 0, len(r.codecs))
+	for id := range r.codecs {
+		schemaIDs = append(schemaIDs, id)
+	}
+	sort.Sort(sort.Reverse(sort.IntSlice(schemaIDs)))
+
+	for _, id := range schemaIDs {
+		codec := r.codecs[id]
 		var payload interface{}
 		if len(value) > 5 {
 			payload, _, err = codec.NativeFromBinary(value[5:])
