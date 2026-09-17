@@ -132,7 +132,7 @@ func (r *codec) Encode(value map[string]interface{}) ([]byte, error) {
 // Decode a avro message binary value to key value map
 func (r *codec) Decode(value []byte) (map[string]interface{}, error) {
 	var err error
-	if len(value) < 1 || value[0] == 0 {
+	if len(value) < 1 || len(value) == 1 && value[0] == 0 {
 		return nil, errors.New("value is empty")
 	}
 	schemaId := binary.BigEndian.Uint32(value[1:5])

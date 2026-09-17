@@ -79,7 +79,7 @@ func TestNonNumericBytesAsValueWithInvalidSchemaIdWithEmptyValue(t *testing.T) {
 	nonBinaryValue, err := codec.Encode(map[string]interface{}{"value": ""})
 	assert.Nil(t, err)
 
-	valueDecoded, err := codec.Decode(nonBinaryValue)
+	valueDecoded, err := codec.Decode(nonBinaryValue[5:])
 	assert.NotNil(t, err)
 	assert.Nil(t, valueDecoded)
 }
